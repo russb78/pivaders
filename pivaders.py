@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import pygame
 from time import sleep
 import random
@@ -29,9 +31,11 @@ class Player(pygame.sprite.Sprite):
         self.rect = pygame.rect.Rect([(RESOLUTION[0] / 2) - self.size[0], RESOLUTION[1] - 125], self.size)
         self.vector = 0
         self.speed = 6
+        self.wait = 350 # time in milliseconds between shots
+        self.time = pygame.time.get_ticks()
 
     def update(self):
-         # stop the player from leaving either side of the scvreen
+         # stop the player from leaving either side of the screen
         self.rect.x += self.vector * self.speed
         if self.rect.x > RESOLUTION[0] - self.size[0]:
             self.rect.x = RESOLUTION[0] - self.size[0]
@@ -39,11 +43,11 @@ class Player(pygame.sprite.Sprite):
             self.rect.x = 0
 
     def control(self):
-        global GAME_OVER
+        global GAME_OVER, real_time
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 GAME_OVER = True # Quit if window close button is pressed
-        
         self.keys = pygame.key.get_pressed()
         if self.keys[pygame.K_ESCAPE]:
             GAME_OVER = True
@@ -54,44 +58,36 @@ class Player(pygame.sprite.Sprite):
         else:
             player.vector = 0 
         if self.keys[pygame.K_SPACE]:
-            if not len(bullet_list): # this needs to be tweaked to be time-consistant
+            if real_time - self.time > self.wait:
                 make_bullet()
+                self.time = real_time
 
 ##### ALIENS, BULLETS & BARRIERS CLASSES #####
 class Alien(pygame.sprite.Sprite):
     def __init__(self):
-        pygame.sprite.Sprite.__init__(self) # Initialise the Sprite class
-        self.image = pygame.image.load("invader.png").convert() #87 x 80 (image size)
+        pygame.sprite.Sprite.__init__(self) # Initialise Sprite class
+        self.image = pygame.image.load("invader.png").convert() 
         self.image.set_colorkey(BLACK)
         self.size = (40, 30) # size of the image
         self.rect = self.image.get_rect()
         self.vector = [1, 1]
-        self.moved = [0, 0] # added to if alien has moved on [x, y] plane
+        self.moved = [0, 0] # iterated on as the sprite moves
         self.time = pygame.time.get_ticks()
-        self.wait = 800
+        self.wait = 1000
+        self.distance = [(ALIEN_WIDTH + SPACER), (ALIEN_HEIGHT + SPACER)]
   
     def update(self):
         if current_time - self.time > self.wait:
-            if self.moved[0] < 4:
-                self.rect.x += self.vector[0] * (ALIEN_WIDTH + 4)
+            if self.moved[0] < 3:
+                self.rect.x += self.vector[0] * self.distance0]
                 self.moved[0] +=1
-            
-            elif self.moved[0] >= 4:
-                self.rect.y += self.vector[1] * SPACER + 10
-                self.moved[1] += 1
-                self.vector[1] = 0
+            else:
+                if not self.moved[1]:
+                    self.rect.y += self.vector[1] * self.distance[1]
                 self.vector[0] *= -1
-                self.moved[0] = 0
-
-                if self.moved[1]:
-                    self.vector[1] = 1
-                    self.rect.y += self.vector[1] * SPACER + 10
-                    self.vector[1] = 0
-                    self.moved[1] = 0
-
-                self.wait -= 15
+                self.moved = [0, 0]
+                self.wait -= 40
             self.time = current_time  
-
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, color, width, height):
@@ -149,7 +145,6 @@ ALIEN_WIDTH = 40; ALIEN_HEIGHT = 30; SPACER = 20
 for column in range(COLUMN):
     for row in range(ROW):
         alien = Alien() # this is what each alien will look like
-        alien.image.set_colorkey(BLACK)
         alien.rect.x = SPACER + (row * (ALIEN_WIDTH + SPACER))
         alien.rect.y = SPACER + (column * (ALIEN_HEIGHT + SPACER))
         alien_list.add(alien) # add the aliens to the list we created just now
@@ -158,14 +153,15 @@ for column in range(COLUMN):
 ###### MAIN GAME LOOP ######## 
 while not GAME_OVER: 
     current_time = pygame.time.get_ticks()
-    player.control()
-    player.update()
-
-    for alien in alien_list:
-        alien.update() # move the aliens
+    real_time = pygame.time.get_ticks()
+    player.control() # control the player
+    player.update() # move the player on screen
 
     for bullet in bullet_list:
-        bullet.update() # move the bullets
+        bullet.update() # move the bullets on screen
+
+    for alien in alien_list:
+        alien.update() # move the aliens on screen
 
     ######## SORT THROUGH THE COLLISSION LISTS #########
     # see if a bullet has collided with an alien
@@ -192,7 +188,7 @@ while not GAME_OVER:
     screen.blit(background_image, [0, 0])
     # draw the sprite list to the screen
     screen.blit(font.render("fps: " + str(clock.get_fps()), 1, WHITE), (0,0))
-    all_sprite_list.draw(screen)
+    all_sprite_list.draw(screen) # draw all actors with a single draw command!
     pygame.display.flip() # Refresh the screen
     clock.tick(30) # Force frame-rate to desired figure
 
