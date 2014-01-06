@@ -79,7 +79,7 @@ class Alien(pygame.sprite.Sprite):
     def update(self):
         if current_time - self.time > self.wait:
             if self.moved[0] < 3:
-                self.rect.x += self.vector[0] * self.distance0]
+                self.rect.x += self.vector[0] * self.distance[0]
                 self.moved[0] +=1
             else:
                 if not self.moved[1]:
