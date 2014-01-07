@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import pygame
-from time import sleep
 import random
 
 BLACK = [0, 0, 0]; BLUE = [0, 0, 255]; WHITE = [255, 255, 255]; RED = [255, 0, 0]
@@ -184,7 +183,7 @@ while not GAME_OVER:
         missile.update()
 
     ######## SORT THROUGH THE COLLISSION LISTS #########
-    # see if a bullet has collided with an alien
+
     for bullet in bullet_list:
         bullet_hit_list = pygame.sprite.spritecollide(bullet, alien_list, True)
         bullet_barrier_list = pygame.sprite.spritecollide(bullet, barrier_list, True)
