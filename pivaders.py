@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import pygame
 import random
@@ -8,7 +8,6 @@ RESOLUTION = [800, 600]
 GAME_OVER = False
 ROW = 10; COLUMN = 4
 ALIEN_WIDTH = 40; ALIEN_HEIGHT = 30; SPACER = 20
-
 
 pygame.init() # Initialise Pygame 
 font = pygame.font.SysFont("Arial", 18)
@@ -30,14 +29,14 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.image.load("ship.png").convert() #87 x 80 (image size)
         self.image.set_colorkey(BLACK)
         self.size = (87, 80) # size of the image
-        self.rect = pygame.rect.Rect([(RESOLUTION[0] / 2) - self.size[0], RESOLUTION[1] - 100], self.size)
+        self.rect = pygame.rect.Rect([(RESOLUTION[0] / 2) - (self.size[0] /2), (RESOLUTION[1] - 90)], self.size)
         self.vector = 0
-        self.speed = 6
+        self.speed = 7 # how many pixels the player moves each update
         self.wait = 350 # time in milliseconds between shots
         self.time = pygame.time.get_ticks()
 
     def update(self):
-         # stop the player from leaving either side of the screen
+        # stop the player from leaving either side of the screen
         self.rect.x += self.vector * self.speed
         if self.rect.x > RESOLUTION[0] - self.size[0]:
             self.rect.x = RESOLUTION[0] - self.size[0]
@@ -63,7 +62,7 @@ class Player(pygame.sprite.Sprite):
                 make_bullet()
                 self.time = real_time
 
-##### ALIENS, BULLETS & BARRIERS CLASSES #####
+##### ALIENS CLASS & BULLETS & BARRIERS BUILDER CLASSES #####
 class Alien(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) # Initialise Sprite class
@@ -74,28 +73,28 @@ class Alien(pygame.sprite.Sprite):
         self.vector = [1, 1]
         self.moved = [0, 0] # iterated on as the sprite moves
         self.time = pygame.time.get_ticks()
-        self.wait = 1000
-        self.distance = [(ALIEN_WIDTH / 2) + (SPACER / 2), SPACER]
+        self.wait = 500 # time delay in milliseconds between movements
+        self.distance = [(ALIEN_WIDTH / 4) + (SPACER / 4), SPACER]
   
     def update(self):
         if current_time - self.time > self.wait:
-            if self.moved[0] < 6:
+            if self.moved[0] < 12: # if the aliens haven't moved right...
                 self.rect.x += self.vector[0] * self.distance[0]
                 self.moved[0] +=1
             else:
-                if not self.moved[1]:
+                if not self.moved[1]: # if the aliens haven't moved down...
                     self.rect.y += self.vector[1] * self.distance[1]
-                self.vector[0] *= -1
+                self.vector[0] *= -1 # reverse the vector
                 self.moved = [0, 0]
-                self.wait -= 40
-            self.time = current_time  
+                self.wait -= 25
+            self.time = current_time
 
-class Blocks(pygame.sprite.Sprite):
+class Blocks(pygame.sprite.Sprite): # This class handles bullets, missiles and barriers
     def __init__(self, color, width, height):
-        pygame.sprite.Sprite.__init__(self) # Initialise the Sprite class
+        pygame.sprite.Sprite.__init__(self) 
         self.image = pygame.Surface([width, height])
         self.image.fill(color)
-        self.rect = self.image.get_rect() # x, y, width & height
+        self.rect = self.image.get_rect() 
         self.vector = 0
         self.speed = 0
 
@@ -104,17 +103,16 @@ class Blocks(pygame.sprite.Sprite):
         if self.rect.y < 0 or self.rect.y > RESOLUTION[1]: # if the bullet goes off the screen, remove it from all groups
             self.kill()
 
-#### FUNCTIONS TO CREATE PLAYER BULLETS AND ENEMY MISSILES ####
+#### FUNCTIONS TO CREATE BULLETS, MISSILES & BARRIERS ####
 def make_bullet():
-    bullet = Blocks(BLUE, 5, 10)
+    bullet = Blocks(BLUE, 5, 15)
     bullet.rect.x = player.rect.x + 40
-    bullet.rect.y = player.rect.y + 5
+    bullet.rect.y = player.rect.y + 10
     bullet.vector = -1
-    bullet.speed = 25
+    bullet.speed = 26
     bullet_list.add(bullet)
     all_sprite_list.add(bullet)
 
-# missiles not yet implimented...
 def make_missile():
     if len(alien_list) > 0:
         missile = Blocks(RED, 5, 5)
@@ -122,21 +120,21 @@ def make_missile():
         missile.rect.x = alien.rect.x + 15
         missile.rect.y = alien.rect.y + 40
         missile.vector = +1
-        missile.speed = 8
+        missile.speed = 10
         missile_list.add(missile)
         all_sprite_list.add(missile)
 
-def make_barriers():
-    BARRIER_SPACER = RESOLUTION[0] / 6
-    for i in range(3): # for three barriers
-        for column in range(5):
-            for row in range(20):
-                barrier = Blocks(WHITE, 5, 5)
-                barrier.rect.x = BARRIER_SPACER + (row * 5)
-                barrier.rect.y = 450 + (column * 2)
-                barrier_list.add(barrier)
-                all_sprite_list.add(barrier)
-        BARRIER_SPACER += RESOLUTION[0] / 4
+def make_barriers(barrier_spacer):
+    for column in range(3):
+        for row in range(9):
+            barrier = Blocks(WHITE, 10, 10)
+            barrier.rect.x = 55 + (200 * barrier_spacer) + (row * 10)
+            barrier.rect.y = 425 + (column * 10)
+            barrier_list.add(barrier)
+            all_sprite_list.add(barrier)
+        barrier_list.add(barrier)
+        all_sprite_list.add(barrier)
+    return barrier_list
 
 #### CREATE GROUPS TO CONTROL COLLISSIONS AND DRAWING ####
 alien_list = pygame.sprite.Group() # list of sprites (to help with management)
@@ -145,14 +143,16 @@ missile_list = pygame.sprite.Group()
 barrier_list = pygame.sprite.Group()
 all_sprite_list = pygame.sprite.Group() # list of everything (to help with management)
 
-# Create the player and add it to top-level group
+#### CREATE A PLAYER ####
 player = Player()
 all_sprite_list.add(player) 
 
-make_barriers()
+#### CREATE A STANDARD SET OF BARRIERS ####
+for spacing in range(4): # for four barriers
+    make_barriers(spacing)
+    spacing += 1
 
-###### CREATE A STANDARD WAVE OF ALIENS ########
-
+#### CREATE A STANDARD WAVE OF ALIENS ####
 for column in range(COLUMN):
     for row in range(ROW):
         alien = Alien()
@@ -163,9 +163,11 @@ for column in range(COLUMN):
 
 ###### MAIN GAME LOOP ######## 
 
+
 while not GAME_OVER: 
     current_time = pygame.time.get_ticks()
     real_time = pygame.time.get_ticks()
+
     player.control() # control the player
     player.update() # move the player on screen
 
@@ -176,7 +178,7 @@ while not GAME_OVER:
         alien.update() # move the aliens on screen
 
     shoot =  random.randrange(100)
-    if shoot in [0, 33, 66, 99]:
+    if shoot in [1, 20, 40, 60, 80, 99]:
         make_missile()
 
     for missile in missile_list:
@@ -184,18 +186,17 @@ while not GAME_OVER:
 
     ######## SORT THROUGH THE COLLISSION LISTS #########
 
-    for bullet in bullet_list:
+    for bullet in bullet_list: # see if a bullet has collided with an alien:
         bullet_hit_list = pygame.sprite.spritecollide(bullet, alien_list, True)
+                               # see if a bullet has collided with a barrier:
         bullet_barrier_list = pygame.sprite.spritecollide(bullet, barrier_list, True)
 
-        for alien in bullet_hit_list:
-            #alien.kill()
+        for alien in bullet_hit_list: # if so, kill the bullet (alien is auto killed)
             bullet.kill()
             shot += 1
             print "You've shot", shot, "alien(s)!"
 
-        for barrier in bullet_barrier_list:
-            barrier.kill()
+        for barrier in bullet_barrier_list: # if so, kill the bullet (barrier is auto killed)
             bullet.kill()
             
     for missile in missile_list:
@@ -209,7 +210,6 @@ while not GAME_OVER:
 
         for barrier in missile_barrier_list:
             missile.kill()
-            #barrier.kill()
 
     # see if the player has collided with an alien
     alien_hit_list = pygame.sprite.spritecollide(player, alien_list, True)
@@ -227,6 +227,6 @@ while not GAME_OVER:
     screen.blit(font.render("fps: " + str(clock.get_fps()), 1, WHITE), (0,0))
     all_sprite_list.draw(screen) # draw all actors with a single draw command!
     pygame.display.flip() # Refresh the screen
-    clock.tick(30) # Force frame-rate to desired figure
+    clock.tick(20) # Force frame-rate to desired figure
 
 pygame.quit () # Game quits gracefully when 'game_over' turns True
