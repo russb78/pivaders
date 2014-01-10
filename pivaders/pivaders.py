@@ -80,7 +80,7 @@ class Alien(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) # Initialise Sprite class
         #Credit: Skorpio & Wubitog http://opengameart.org/content/3-spaceships
-        self.image = pygame.image.load(os.path.join("data", "invader.png")).convert() 
+        self.image = pygame.image.load(os.path.join("data", "Spaceship16.png")).convert() 
         self.image.set_colorkey(WHITE)
         self.size = (30, 40) # size of the image
         self.rect = self.image.get_rect()
