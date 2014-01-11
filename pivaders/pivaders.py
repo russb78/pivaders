@@ -2,18 +2,22 @@
 
 import pygame, random, os
 
+pygame.init() # Initialise Pygame 
+pygame.font.init()
+
 BLACK = [0, 0, 0]; BLUE = [0, 0, 255]; WHITE = [255, 255, 255]; RED = [255, 0, 0]
 RESOLUTION = [800, 600]
 GAME_OVER = False
 ROW = 10; COLUMN = 4
 ALIEN_WIDTH = 30; ALIEN_HEIGHT = 40; SPACER = 20
-at_start_screen = True
 
-pygame.init() # Initialise Pygame 
-font = pygame.font.SysFont("Arial", 22)
-start_font = pygame.font.SysFont("Times", 50)
+game_font = pygame.font.Font(os.path.join('data', 'Orbitracer.ttf'), 28)
+# From http://openfontlibrary.org courtesy of www.chrisdesign.wordpress.com
+start_font = pygame.font.Font(os.path.join('data', 'Orbitracer.ttf'), 72)
 screen = pygame.display.set_mode([RESOLUTION[0], RESOLUTION[1]])
 clock = pygame.time.Clock() # Initialise a clock to limit FPS
+
+at_start_screen = True
 
 pygame.display.set_caption('Pivaders - Press ESC to quit')
 pygame.mouse.set_visible(False) # We don't need the mouse so hide it
@@ -21,7 +25,8 @@ pygame.mouse.set_visible(False) # We don't need the mouse so hide it
 # courtesy of http://opengameart.org/users/rawdanitsu:  
 bg = pygame.image.load(
     os.path.join('data', 'Space-Background.jpg')).convert()
-
+sc = pygame.image.load(
+    os.path.join('data', 'start_screen.jpg')).convert()
 #### CREATE GROUPS TO HOUSE SEPERATE GROUPS OF ACTORS ####
 alien_group = pygame.sprite.Group() 
 bullet_group = pygame.sprite.Group()
@@ -45,7 +50,7 @@ class Player(pygame.sprite.Sprite):
         self.speed = 7 # how many pixels the player moves each update
         self.wait = 350 # time in milliseconds between shots
         self.time = pygame.time.get_ticks()
-        self.lives = 3
+        self.lives = 2
         self.score = 0
         self.defenses_breached = False
 
@@ -62,10 +67,9 @@ class Player(pygame.sprite.Sprite):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 GAME_OVER = True # Quit if window close button is pressed
-
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                at_start_screen = True
         self.keys = pygame.key.get_pressed()
-        if self.keys[pygame.K_ESCAPE]:
-            GAME_OVER = True
         if self.keys[pygame.K_LEFT]:
             player.vector = -1
         elif self.keys[pygame.K_RIGHT]:
@@ -76,9 +80,6 @@ class Player(pygame.sprite.Sprite):
             if control_time - self.time > self.wait:
                 make_bullet()
                 self.time = control_time
-
-player = Player()
-all_sprite_list.add(player)
 
 ##### ALIEN CLASS #####
 class Alien(pygame.sprite.Sprite):
@@ -107,8 +108,8 @@ class Alien(pygame.sprite.Sprite):
                 self.vector[0] *= -1 # reverse the vector
                 self.moved = [0, 0]
                 self.wait -= 20
-                if self.wait <= 0:
-                    self.wait = 0
+                if self.wait <= 100:
+                    self.wait = 100
             self.time = current_time
 
 
@@ -179,23 +180,31 @@ def make_barrier(columns, rows, barrier_spacer):
 def defenses_breached():
     for alien in alien_group:
         if alien.rect.y > 405:
-            screen.blit(font.render(
-                "The aliens have breached our defenses!", 1, RED), (250, 10)) 
+            screen.blit(game_font.render(
+            "The aliens have breached our defenses!", 1, RED), (250, 10))
+            draw_screen()
+            pygame.time.delay(2000)
             return True
+
+def kill_all():
+    for items in [
+    bullet_group, missle_group, alien_group, barrier_group]:
+        for i in items:
+                i.kill()
+    player.kill()
 
 def is_dead():
     if player.lives < 0:
-        screen.blit(font.render(
-            "Game Over! You scored: " + str(player.score), 1, RED), (275, 10))
+        screen.blit(game_font.render(
+        "Game Over! You scored: " + str(player.score), 1, RED), (275, 10))
+        draw_screen()
+        pygame.time.delay(2000)
         return True
 
 def win_round():
-    if len(alien_group) < 1:
-        screen.blit(font.render(
-            "You won the round!", 1, RED), (325, 10))
-        for items in [bullet_group, missle_group]:
-            for i in items:
-                i.kill()
+    if len(alien_group) < 1 and at_start_screen == False:
+        screen.blit(game_font.render(
+        "You won the round!", 1, RED), (325, 10))
         return True
 
 #### FUCTION TO CREATE A WAVE OF ALIENS ####
@@ -218,43 +227,48 @@ def make_defenses():
 def start_screen():
     global GAME_OVER, at_start_screen 
     while at_start_screen:
-        screen.blit(bg, [0, 0])
+        kill_all()
+        screen.blit(sc, [0, 0])
         screen.blit(start_font.render(
-            "SPACE INVADERS", 1, WHITE), (RESOLUTION[0] - 600, 100))
-        screen.blit(start_font.render(
-            "Press any key to start", 1, WHITE), (RESOLUTION[0] - 600, 200))
+        "PIVADERS", 1, WHITE), (265, 120))
+        screen.blit(game_font.render(
+            "PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
         pygame.display.flip()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 GAME_OVER = True # Quit if window close button is pressed
                 at_start_screen = False
-    
-            player.keys = pygame.key.get_pressed()
-            if event.type == pygame.KEYUP:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                GAME_OVER = True
                 at_start_screen = False
-
+                kill_all()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                at_start_screen = False
+                main_loop()
 ### DRAW ALL ACTORS ###
 def draw_screen():
     all_sprite_list.draw(screen) # draw all the sprites in one go
-    screen.blit(font.render(
-        "SCORE:" + str(player.score), 1, WHITE), (10, 5))
-    screen.blit(font.render(
-        "LIVES:" + str(player.lives), 1, WHITE), (10, 25))
-    screen.blit(font.render(
-        "FPS: " + str(clock.get_fps()), 1, WHITE), (10, 45))
+    screen.blit(game_font.render(
+        "SCORE " + str(player.score), 1, WHITE), (12, 10))
+    screen.blit(game_font.render(
+        "LIVES " + str(player.lives + 1), 1, RED), (355, 570))
+    #screen.blit(game_font.render(
+        #"FPS: " + str(clock.get_fps()), 1, WHITE), (10, 45))
     pygame.display.flip() # refresh the screen
     screen.blit(bg, [0, 0]) # clear the screen
     clock.tick(20) # Force frame-rate to desired number
 
 ###### MAIN GAME LOOP ######## 
 def main_loop():
-    global GAME_OVER, current_time, control_time, at_start_screen
+    global GAME_OVER, current_time, control_time, at_start_screen, player
     
-    next_level = 100; missile_speed = 1
+    level_up = 100; missile_speed = 1
+    player = Player()
+    all_sprite_list.add(player)
 
     make_aliens(0)
-    make_defenses()
+    make_defenses() 
 
     while not GAME_OVER: # keep going until GAME_OVER turns True
         if at_start_screen:
@@ -303,21 +317,36 @@ def main_loop():
                 missile.kill()
 
         #### ITERATE OVER GAMEOVER CONDITIONS & DRAW SCREEN ####
-        if defenses_breached() or is_dead(): # if true quit the game
+        if defenses_breached() or is_dead():
             at_start_screen = True
-            #GAME_OVER = True
 
         if win_round():
             draw_screen()
             pygame.time.wait(2000)
-            make_aliens(next_level)
+            make_aliens(level_up)
             make_defenses()
             missile_speed += 1
-            next_level += 100
+            level_up += 100
         draw_screen()
 
-    pygame.time.wait(2500) # give people time to see the 'game over message'
-    pygame.quit () # Game quits gracefully when 'game_over' is True
+    pygame.quit()
 
 if __name__ == '__main__':
     main_loop()
+
+#### TO DO ####
+# Re-write classes
+# Introduce app class
+# Clean up main loop
+# Figure out the fonts
+# Tweak functions as needed
+# When you die the game restarts!
+# Missiles still remain between rounds
+# You can do group collides!
+"""
+   def collide_red_blockers(self):
+        reds = (shot for shot in self.bullets if shot.color == RED)
+        red_bullets = pygame.sprite.Group(reds)
+        pygame.sprite.groupcollide(red_bullets, self.allBlockers, True, True)
+"""
+#### TO DO ####
