@@ -4,4 +4,7 @@ The challenge was to write a playable and challenging game in under 300 lines of
 
 This project was created by Russell Barnes for Linux User & Developer magazine issue 136.
 
+Player ship & background courtesy of Rawdanitsu (http://opengameart.org/users/rawdanitsu).
+
+Alien ship image courtesy of Skorpio & Wubitog (http://opengameart.org/content/3-spaceships).
 
