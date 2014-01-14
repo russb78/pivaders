@@ -2,13 +2,11 @@
 
 import pygame, random, os
 
-### CONSTANTS ###
 RES = [800, 600]
 BLACK = [0, 0, 0]; BLUE = [0, 0, 255]; WHITE = [255, 255, 255]; RED = [255, 0, 0]
-BARRIER_ROW = 10; BARRIER_COLUMN = 4
+BARRIER_ROW = 10; BARRIER_COLUMN = 4; BARRIER_SPACER = 0
 ALIEN_WIDTH = 40; ALIEN_HEIGHT = 30; ALIEN_SPACER = 20
 PLAYER_HEIGHT = 60; PLAYER_WIDTH = 55
-
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -25,7 +23,7 @@ class Player(pygame.sprite.Sprite):
         self.speed = 350 # time in milliseconds between shots
         self.time = pygame.time.get_ticks()
         self.lives = 2
-
+        self.score = 0
 
     def update(self):
         # stop the player from leaving either side of the screen
@@ -39,11 +37,10 @@ class Player(pygame.sprite.Sprite):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 # app local GAME_OVER
-                pass
+                pv.end_game = True
             if event.type == pygame.KEYDOWN \
             and event.key == pygame.K_ESCAPE:
-                # go to start screen
-                pass
+                pv.goto_intro = True
 
         self.keys = pygame.key.get_pressed()
         if self.keys[pygame.K_LEFT]:
@@ -53,11 +50,10 @@ class Player(pygame.sprite.Sprite):
         else:
             self.vector = 0 # if not left or right, then stop
         if self.keys[pygame.K_SPACE]:
-            if event.type == pygame.KEYUP: # only shoot once the key is up!
+            #if event.type == pygame.KEYUP: # only shoot once the key is up!
                 #if game.time - self.time > self.speed: << shouldn't need this
-                #make_bullet()
+            Game.make_bullet()
                 #self.time = game.time << or this
-                pass
 
 
 class Alien(pygame.sprite.Sprite):
@@ -73,10 +69,10 @@ class Alien(pygame.sprite.Sprite):
         self.has_moved = [0, 0] # iterated on as the sprite moves
         self.time = pygame.time.get_ticks()
         self.speed = 600 # time delay in milliseconds between movements
-        self.travel = [(self.size[0] - 7), SPACER]
+        self.travel = [(self.size[0] - 7), ALIEN_SPACER]
 
     def update(self):
-        if game.time - self.time > self.speed:
+        if pv.game_time - self.time > self.speed:
             if self.has_moved[0] < 12: # if the aliens haven't has_moved right...
                 self.rect.x += self.vector[0] * self.travel[0]
                 self.has_moved[0] +=1
@@ -89,7 +85,7 @@ class Alien(pygame.sprite.Sprite):
                 self.speed -= 20
                 if self.speed <= 100:
                     self.speed = 100
-            self.time = game.time
+            self.time = pv.game_time
 
 
 class Ammo(pygame.sprite.Sprite):
@@ -121,19 +117,29 @@ class Game(object):
         pygame.init()
         pygame.font.init()
         pygame.display.set_caption('Pivaders - Press ESC to quit')
+        self.clock = pygame.time.Clock()
         pygame.mouse.set_visible(False) # We don't need the mouse so hide it
         self.end_game = False
         self.goto_intro = True
         self.font = pygame.font.Font(os.path.join('data', 'Orbitracer.ttf'), 28)
         self.screen = pygame.display.set_mode([RES[0], RES[1]])
-        self.clock = pygame.time.Clock() # Initialise a clock to limit FPS
-        self.refresh_rate = 0
+        # Initialise a clock to limit FPS
+        self.game_time = pygame.time.get_ticks()
+        self.control_time = pygame.time.get_ticks()
+        self.refresh_rate = 30
+        self.missile_booster = 1
+        self.alien_group = pygame.sprite.Group()
+        self.bullet_group = pygame.sprite.Group()
+        self.missle_group = pygame.sprite.Group()
+        self.barrier_group = pygame.sprite.Group()
+        self.all_sprite_list = pygame.sprite.Group()
         # Load the graphical images we're using for the background
         # courtesy of http://opengameart.org/users/rawdanitsu:  
         self.intro_screen = pygame.image.load(
             os.path.join('data', 'start_screen.jpg')).convert()
         self.background = pygame.image.load(
             os.path.join('data', 'Space-Background.jpg')).convert()
+        self.level_up = 100; missile_booster = 1
 
     def splash_screen(self):
         while self.goto_intro:
@@ -156,39 +162,105 @@ class Game(object):
 
                     elif event.key == pygame.K_SPACE:
                         self.goto_intro = False
-                        self.game_loop()
+                        #self.kill_all()
 
-    def refresh_screen(self, refresh_rate):
+                        return self.make_player(), self.make_defenses(), self.alien_wave(0)
+
+    def make_player(self):
+        self.player = Player()
+        self.all_sprite_list.add(self.player)
+        return self.player
+
+    def refresh_screen(self):
         """
         Draw everything to the screen. refresh_rate
         sets the FPS for the entire game
         """
-        self.all_sprites.draw(screen) # draw all the sprites in one go
-        self.refresh_scores(True)
+        self.all_sprite_list.draw(self.screen) # draw all the sprites in one go
+        self.refresh_scores()
         pygame.display.flip() # refresh the screen
         self.screen.blit(self.background, [0, 0]) # clear the screen
-        self.clock.tick(refresh_rate) # Force frame-rate to desired number
+        self.clock.tick(self.refresh_rate) # Force frame-rate to desired number
 
-    def refresh_scores(self, show_FPS = False):
+    def refresh_scores(self):
         self.screen.blit(self.font.render(
-            "SCORE " + str(player.score), 1, WHITE), (12, 10))
+            "SCORE " + str(self.player.score), 1, WHITE), (12, 10))
         self.screen.blit(self.font.render(
-            "LIVES " + str(player.lives + 1), 1, RED), (355, 570))
-        if show_FPS:
-            self.screen.blit(self.font.render(
-                "FPS: " + str(clock.get_fps()), 1, WHITE), (12, 45))
+            "LIVES " + str(self.player.lives + 1), 1, RED), (355, 570))
+        self.screen.blit(self.font.render(
+            "FPS: " + str(self.clock.get_fps()), 1, WHITE), (12, 45))
+
+    def alien_wave(self, speed):
+        for column in range(BARRIER_COLUMN):
+            for row in range(BARRIER_ROW):
+                alien = Alien()
+                alien.rect.y = 55 + (column * (ALIEN_HEIGHT + ALIEN_SPACER))
+                alien.rect.x = ALIEN_SPACER + (row * (ALIEN_WIDTH + ALIEN_SPACER))
+                self.alien_group.add(alien) # add the aliens to the list we created just now
+                self.all_sprite_list.add(alien) # and also add them to the overall list
+                alien.speed -= speed
+        return self.alien_group
+
+    def make_bullet(self):
+        bullet = Ammo(BLUE, 5, 15)
+        bullet.rect.x = self.player.rect.x + 30
+        bullet.rect.y = self.player.rect.y + 10
+        self.bullet_group.add(bullet)
+        self.all_sprite_list.add(bullet)
+        return self.bullet_group
+
+    def make_missile(self, alien, missile_booster):
+        shoot = random.randrange(50)
+        self.missile_booster = missile_booster
+        if len(self.alien_group): # if there are aliens on screen...
+            shooter = random.choice([alien for alien in self.alien_group])
+            #make_missile(shooter, missile_booster)
+        if shoot in [16, 33, 49]:
+            missile = Ammo(RED, 5, 5)
+            missile.rect.x = alien.rect.x + 15
+            missile.rect.y = alien.rect.y + 40
+            missile.speed += self.missile_booster
+            self.missle_group.add(missile)
+            self.all_sprite_list.add(missile)
+            return self.missile_group
+
+    def make_barrier(self, columns, rows, barrier_spacer):
+        for column in range(columns):
+            for row in range(rows):
+                barrier = Block(WHITE, 10, 10)
+                barrier.rect.x = 55 + (200 * barrier_spacer) + (row * 10)
+                barrier.rect.y = 450 + (column * 10)
+                self.barrier_group.add(barrier)
+                self.all_sprite_list.add(barrier)
+        return self.barrier_group
+
+    def make_defenses(self):
+        for spacing, spacing in enumerate(xrange(4)):
+            self.make_barrier(3, 9, spacing)
 
     def kill_all(self):
         """
         Clear the screen of all actors
         """
-        pass
+        for items in [
+        self.bullet_group, self.missle_group, self.alien_group, self.barrier_group]:
+            for i in items:
+                i.kill()
+        self.player.kill()
 
-    def game_loop(self):
-        """
-        This is the main game loop of the game. 
-        """
-        pass
+    def is_dead(self):
+        if player.lives < 0:
+            screen.blit(game_font.render(
+            "Game Over! You scored: " + str(player.score), 1, RED), (275, 10))
+            self.refresh_screen()
+            pygame.time.delay(2000)
+            return True
+
+    def win_round(self):
+        if len(self.alien_group) < 1 and at_start_screen == False:
+            screen.blit(game_font.render(
+            "You won the round!", 1, RED), (325, 10))
+            return True
 
     def defenses_breached(self):
         """
@@ -196,19 +268,43 @@ class Game(object):
         # or goes beyond end of screen it's game over.
         return True if any of these conditions are met.
         """
-        pass
+        for alien in self.alien_group:
+            if alien.rect.y > 405:
+                screen.blit(game_font.render(
+                "The aliens have breached our defenses!", 1, RED), (250, 10))
+                self.refresh_screen()
+                pygame.time.delay(2000)
+                return True
 
+    def main_loop(self):
 
-### app class variables 
-    """
+        while not self.end_game:
+            while not self.goto_intro:
+
+                self.player.control()
+                self.player.update()
+
+                for alien in self.alien_group: # self.bullet_group, self.missle_group]:
+                    alien.update()
+
+                for missile in self.missile_group:
+                    missile.update(missile)
+
+                if len(alien_group): # if there are aliens on screen...
+                    shooter = random.choice([alien for alien in self.alien_group])
+                    self.make_missile(shooter, self.missile_booster)
+
+                self.refresh_screen()
+            self.splash_screen()
+        pygame.quit()
+
+pv = Game()
+pv.main_loop()
+
+### app class variables:
+"""
     quit_game, game_time, start_screen, defenses_breached, is_dead, 
     score, level_up (change alien speed & missile_speed / regularity) 
-    """
+"""
 
-### app class functions:
-    """
-    make_lazer, make_missile, 
-    """
-
-    # laser = 26 speed / -1 vector
-    # missile = 10 speed / +1 vector
+ 
