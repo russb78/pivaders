@@ -333,20 +333,3 @@ def main_loop():
 
 if __name__ == '__main__':
     main_loop()
-
-#### TO DO ####
-# Re-write classes
-# Introduce app class
-# Clean up main loop
-# Figure out the fonts
-# Tweak functions as needed
-# When you die the game restarts!
-# Missiles still remain between rounds
-# You can do group collides!
-"""
-   def collide_red_blockers(self):
-        reds = (shot for shot in self.bullets if shot.color == RED)
-        red_bullets = pygame.sprite.Group(reds)
-        pygame.sprite.groupcollide(red_bullets, self.allBlockers, True, True)
-"""
-#### TO DO ####
