@@ -167,8 +167,6 @@ class Game(object):
             "SCORE " + str(self.score), 1, WHITE), (12, 10))
         self.screen.blit(self.font.render(
             "LIVES " + str(self.lives + 1), 1, RED), (355, 570))
-        self.screen.blit(self.font.render(
-            "FPS: " + str(self.clock.get_fps()), 1, WHITE), (12, 40))
 
     def alien_wave(self, speed):
         for column in range(BARRIER_COLUMN):
