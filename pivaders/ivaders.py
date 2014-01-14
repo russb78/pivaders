@@ -3,7 +3,8 @@
 import pygame, random, os
 
 RES = [800, 600]; BARRIER_ROW = 10; BARRIER_COLUMN = 4
-BLACK = [0, 0, 0]; BLUE = [0, 0, 255]; WHITE = [255, 255, 255]; RED = [255, 0, 0]
+BLACK = [0, 0, 0]; BLUE = [0, 0, 255]; 
+WHITE = [255, 255, 255]; RED = [255, 0, 0]
 ALIEN_WIDTH = 30; ALIEN_HEIGHT = 40; ALIEN_SPACER = 20
 
 class Player(pygame.sprite.Sprite):
@@ -16,7 +17,7 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = (RES[0] / 2) - (self.size[0] / 2)
         self.rect.y = 510
-        self.vector = 0; self.travel = 7; self.speed = 350 
+        self.vector = 0; self.travel = 7; self.speed = 350
         self.time = pygame.time.get_ticks()
         self.shoot_bullet = False
 
@@ -49,7 +50,7 @@ class Alien(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) 
         self.image = pygame.image.load(
-            os.path.join("data", "Spaceship16.png")).convert() 
+        os.path.join("data", "Spaceship16.png")).convert()
         self.image.set_colorkey(WHITE)
         self.size = (30, 40) 
         self.rect = self.image.get_rect()
@@ -67,7 +68,7 @@ class Alien(pygame.sprite.Sprite):
             else:
                 if not self.has_moved[1]: 
                     self.rect.y += self.vector[1] * self.travel[1]
-                self.vector[0] *= -1 # reverse the vector
+                self.vector[0] *= -1 
                 self.has_moved = [0, 0]
                 self.speed -= 20
                 if self.speed <= 100:
@@ -105,7 +106,8 @@ class Game(object):
         pygame.init()
         pygame.font.init()
         self.clock = pygame.time.Clock()
-        self.font = pygame.font.Font(os.path.join('data', 'Orbitracer.ttf'), 28)
+        self.font = pygame.font.Font(os.path.join(
+        'data', 'Orbitracer.ttf'), 28)
         self.screen = pygame.display.set_mode([RES[0], RES[1]])
         self.time = pygame.time.get_ticks()
         self.refresh_rate = 20
@@ -118,13 +120,11 @@ class Game(object):
         self.barrier_group = pygame.sprite.Group()
         self.all_sprite_list = pygame.sprite.Group()
         self.intro_screen = pygame.image.load(
-            os.path.join('data', 'start_screen.jpg')).convert()
+        os.path.join('data', 'start_screen.jpg')).convert()
         self.background = pygame.image.load(
-            os.path.join('data', 'Space-Background.jpg')).convert()
+        os.path.join('data', 'Space-Background.jpg')).convert()
         pygame.display.set_caption('Pivaders - Press ESC to quit')
         pygame.mouse.set_visible(False) 
-        icon = pygame.transform.scale(self.intro_screen, (32, 32))
-        pygame.display.set_icon(icon)
         GameState.end_game = False; GameState.goto_intro = True
 
     def splash_screen(self):
@@ -134,7 +134,7 @@ class Game(object):
             self.screen.blit(self.font.render(
             "PIVADERS", 1, WHITE), (265, 120))
             self.screen.blit(self.font.render(
-                "PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
+            "PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
             pygame.display.flip()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -166,9 +166,9 @@ class Game(object):
 
     def refresh_scores(self):
         self.screen.blit(self.font.render(
-            "SCORE " + str(self.score), 1, WHITE), (12, 10))
+        "SCORE " + str(self.score), 1, WHITE), (12, 10))
         self.screen.blit(self.font.render(
-            "LIVES " + str(self.lives + 1), 1, RED), (355, 570))
+        "LIVES " + str(self.lives + 1), 1, RED), (355, 570))
 
     def alien_wave(self, speed):
         for column in range(BARRIER_COLUMN):
@@ -206,11 +206,11 @@ class Game(object):
                     self.missile_group.add(missile)
                     self.all_sprite_list.add(missile)
 
-    def make_barrier(self, columns, rows, barrier_spacer):
+    def make_barrier(self, columns, rows, spacer):
         for column in range(columns):
             for row in range(rows):
                 barrier = Block(WHITE, 10, 10)
-                barrier.rect.x = 55 + (200 * barrier_spacer) + (row * 10)
+                barrier.rect.x = 55 + (200 * spacer) + (row * 10)
                 barrier.rect.y = 450 + (column * 10)
                 self.barrier_group.add(barrier)
                 self.all_sprite_list.add(barrier)
@@ -235,7 +235,7 @@ class Game(object):
             return True
 
     def win_round(self):
-        if len(self.alien_group) < 1 and GameState.goto_intro == False:
+        if len(self.alien_group) < 1:
             self.screen.blit(self.font.render(
             "You won the round!", 1, RED), (325, 15))
             self.refresh_screen()
@@ -254,14 +254,14 @@ class Game(object):
 
     def calc_collisions(self):
         pygame.sprite.groupcollide(
-            self.missile_group, self.barrier_group, True, True)
+        self.missile_group, self.barrier_group, True, True)
         pygame.sprite.groupcollide(
-            self.bullet_group, self.barrier_group, True, True)
+        self.bullet_group, self.barrier_group, True, True)
         if pygame.sprite.groupcollide(
-            self.bullet_group, self.alien_group, True, True):
+        self.bullet_group, self.alien_group, True, True):
             self.score += 10
         if pygame.sprite.groupcollide(
-            self.player_group, self.missile_group, False, True):
+        self.player_group, self.missile_group, False, True):
             self.lives -= 1
 
     def next_round(self):
