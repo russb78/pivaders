@@ -30,10 +30,10 @@ class Player(pygame.sprite.Sprite):
     def control(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                Game.end_game = True
+                GameState.end_game = True
             if event.type == pygame.KEYDOWN \
             and event.key == pygame.K_ESCAPE:
-                Game.goto_intro = True
+                GameState.goto_intro = True
         self.keys = pygame.key.get_pressed()
         if self.keys[pygame.K_LEFT]:
             self.vector = -1 
@@ -44,10 +44,10 @@ class Player(pygame.sprite.Sprite):
         if self.keys[pygame.K_SPACE]:
             self.shoot_bullet = True
 
+
 class Alien(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) 
-        #Credit: Skorpio & Wubitog http://opengameart.org/content/3-spaceships
         self.image = pygame.image.load(
             os.path.join("data", "Spaceship16.png")).convert() 
         self.image.set_colorkey(WHITE)
@@ -60,7 +60,7 @@ class Alien(pygame.sprite.Sprite):
         self.travel = [(self.size[0] - 7), ALIEN_SPACER]
 
     def update(self):
-        if Game.alien_time - self.time > self.speed:
+        if GameState.alien_time - self.time > self.speed:
             if self.has_moved[0] < 12: 
                 self.rect.x += self.vector[0] * self.travel[0]
                 self.has_moved[0] +=1
@@ -72,7 +72,7 @@ class Alien(pygame.sprite.Sprite):
                 self.speed -= 20
                 if self.speed <= 100:
                     self.speed = 100
-            self.time = Game.alien_time
+            self.time = GameState.alien_time
 
 
 class Ammo(pygame.sprite.Sprite):
@@ -97,14 +97,14 @@ class Block(pygame.sprite.Sprite):
         self.image.fill(color)
         self.rect = self.image.get_rect()
 
+class GameState:
+    pass
 
 class Game(object):
     def __init__(self):
         pygame.init()
         pygame.font.init()
-        pygame.display.set_caption('Pivaders - Press ESC to quit')
         self.clock = pygame.time.Clock()
-        pygame.mouse.set_visible(False) 
         self.font = pygame.font.Font(os.path.join('data', 'Orbitracer.ttf'), 28)
         self.screen = pygame.display.set_mode([RES[0], RES[1]])
         self.time = pygame.time.get_ticks()
@@ -117,16 +117,18 @@ class Game(object):
         self.missile_group = pygame.sprite.Group()
         self.barrier_group = pygame.sprite.Group()
         self.all_sprite_list = pygame.sprite.Group()
-        # Load the graphical images we're using for the background
-        # courtesy of http://opengameart.org/users/rawdanitsu:  
         self.intro_screen = pygame.image.load(
             os.path.join('data', 'start_screen.jpg')).convert()
         self.background = pygame.image.load(
             os.path.join('data', 'Space-Background.jpg')).convert()
-        Game.end_game = False; Game.goto_intro = True
+        pygame.display.set_caption('Pivaders - Press ESC to quit')
+        pygame.mouse.set_visible(False) 
+        icon = pygame.transform.scale(self.intro_screen, (32, 32))
+        pygame.display.set_icon(icon)
+        GameState.end_game = False; GameState.goto_intro = True
 
     def splash_screen(self):
-        while Game.goto_intro:
+        while GameState.goto_intro:
             self.kill_all()
             self.screen.blit(self.intro_screen, [0, 0])
             self.screen.blit(self.font.render(
@@ -136,15 +138,15 @@ class Game(object):
             pygame.display.flip()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    Game.end_game = True # Quit if window close button is pressed
-                    Game.goto_intro = False
+                    GameState.end_game = True 
+                    GameState.goto_intro = False
                 if event.type == pygame.KEYDOWN: 
                     if event.key == pygame.K_ESCAPE:
-                        Game.end_game = True
-                        Game.goto_intro = False
+                        GameState.end_game = True
+                        GameState.goto_intro = False
                         self.kill_all()
                     elif event.key == pygame.K_SPACE:
-                        Game.goto_intro = False
+                        GameState.goto_intro = False
                         self.lives = 2; self.score = 0
                         self.make_player()
                         self.make_defenses()
@@ -179,27 +181,25 @@ class Game(object):
                 alien.speed -= speed
 
     def make_bullet(self):
-        if self.player.shoot_bullet:
-            if Game.game_time - self.player.time > self.player.speed:
-                bullet = Ammo(BLUE, 5, 15)
-                bullet.vector = -1
-                bullet.speed = 26
-                bullet.rect.x = self.player.rect.x + 30
-                bullet.rect.y = self.player.rect.y + 10
-                self.bullet_group.add(bullet)
-                self.all_sprite_list.add(bullet)
-                self.player.shoot_bullet = False
-                self.player.time = Game.game_time
+        if GameState.game_time - self.player.time > self.player.speed:
+            bullet = Ammo(BLUE, 5, 15)
+            bullet.vector = -1; bullet.speed = 26
+            bullet.rect.x = self.player.rect.x + 30
+            bullet.rect.y = self.player.rect.y + 10
+            self.bullet_group.add(bullet)
+            self.all_sprite_list.add(bullet)
+            self.player.time = GameState.game_time
+        self.player.shoot_bullet = False
 
     def make_missile(self):
         shoot = random.randrange(50)
         if shoot in [16, 33, 49]:
             if len(self.alien_group):
-                shooter = random.choice([alien for alien in self.alien_group])
+                shooter = random.choice([
+                alien for alien in self.alien_group])
                 if shoot in [16, 33, 49]:
                     missile = Ammo(RED, 5, 5)
-                    missile.vector = 1
-                    missile.speed = 9
+                    missile.vector = 1; missile.speed = 9
                     missile.rect.x = shooter.rect.x + 15
                     missile.rect.y = shooter.rect.y + 40
                     missile.speed += self.missile_booster
@@ -228,13 +228,14 @@ class Game(object):
     def is_dead(self):
         if self.lives < 0:
             self.screen.blit(self.font.render(
-            "Game Over! You scored: " + str(self.score), 1, RED), (275, 15))
+            "GameState Over! You scored: " + str(self.score), 
+            1, RED), (275, 15))
             self.refresh_screen()
             pygame.time.delay(2500)
             return True
 
     def win_round(self):
-        if len(self.alien_group) < 1 and self.goto_intro == False:
+        if len(self.alien_group) < 1 and GameState.goto_intro == False:
             self.screen.blit(self.font.render(
             "You won the round!", 1, RED), (325, 15))
             self.refresh_screen()
@@ -245,7 +246,8 @@ class Game(object):
         for alien in self.alien_group:
             if alien.rect.y > 405:
                 self.screen.blit(self.font.render(
-                "The aliens have breached our defenses!", 1, RED), (240, 15))
+                "The aliens have breached our defenses!", 
+                1, RED), (240, 15))
                 self.refresh_screen()
                 pygame.time.delay(2500)
                 return True
@@ -263,19 +265,19 @@ class Game(object):
             self.lives -= 1
 
     def next_round(self):
-        for actor in [self.missile_group, self.barrier_group, self.bullet_group]:
+        for actor in [self.missile_group, 
+        self.barrier_group, self.bullet_group]:
             for i in actor:
                 i.kill()
         self.alien_wave(self.level_up)
         self.make_defenses()
-        self.missile_booster += 1
-        self.level_up += 100
+        self.missile_booster += 1; self.level_up += 100
 
     def main_loop(self):
-        while not Game.end_game:
-            while not Game.goto_intro:
-                Game.game_time = pygame.time.get_ticks()
-                Game.alien_time = pygame.time.get_ticks()
+        while not GameState.end_game:
+            while not GameState.goto_intro:
+                GameState.game_time = pygame.time.get_ticks()
+                GameState.alien_time = pygame.time.get_ticks()
                 self.player.control()
                 if self.player.shoot_bullet:
                     self.make_bullet()
@@ -286,7 +288,7 @@ class Game(object):
                         i.update()
                 self.calc_collisions()
                 if self.is_dead() or self.defenses_breached():
-                    Game.goto_intro = True
+                    GameState.goto_intro = True
                 if self.win_round():
                     self.next_round()
                 self.refresh_screen()
