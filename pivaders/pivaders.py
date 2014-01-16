@@ -94,7 +94,7 @@ class Game(object):
         self.time = pygame.time.get_ticks()
         self.refresh_rate = 20
         self.rounds_won = 0
-        self.level_up = 100
+        self.level_up = 50
         self.score = 0
         self.lives = 2
         self.player_group = pygame.sprite.Group()
