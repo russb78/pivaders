@@ -88,8 +88,10 @@ class Game(object):
         pygame.init()
         pygame.font.init()
         self.clock = pygame.time.Clock()
-        self.game_font = pygame.font.Font('data/Orbitracer.ttf', 28)
-        self.intro_font = pygame.font.Font('data/Orbitracer.ttf', 72)
+        self.game_font = pygame.font.Font(
+        'data/Orbitracer.ttf', 28)
+        self.intro_font = pygame.font.Font(
+        'data/Orbitracer.ttf', 72)
         self.screen = pygame.display.set_mode([RES[0], RES[1]])
         self.time = pygame.time.get_ticks()
         self.refresh_rate = 20
@@ -104,16 +106,16 @@ class Game(object):
         self.barrier_group = pygame.sprite.Group()
         self.all_sprite_list = pygame.sprite.Group()
         self.intro_screen = pygame.image.load(
-        os.path.join('data', 'start_screen.jpg')).convert()
+        'data/start_screen.jpg').convert()
         self.background = pygame.image.load(
-        os.path.join('data', 'Space-Background.jpg')).convert()
-        pygame.display.set_caption('Pivaders - Press ESC to quit')
+        'data/Space-Background.jpg').convert()
+        pygame.display.set_caption('Pivaders - ESC to exit')
         pygame.mouse.set_visible(False) 
         Player.image = pygame.image.load(
-        os.path.join("data", "ship.png")).convert()
+        'data/ship.png').convert()
         Player.image.set_colorkey(BLACK)
         Alien.image = pygame.image.load(
-        os.path.join("data", "Spaceship16.png")).convert()
+        'data/Spaceship16.png').convert()
         Alien.image.set_colorkey(WHITE)
         GameState.end_game = False
         GameState.start_screen = True
@@ -232,16 +234,16 @@ class Game(object):
             self.make_barrier(3, 9, spacing)
 
     def kill_all(self):
-        for items in [self.bullet_group, self.player_group, 
-        self.missile_group, self.alien_group, self.barrier_group]:
+        for items in [self.bullet_group, self.player_group,
+        self.alien_group, self.missile_group, self.barrier_group]:
             for i in items:
                 i.kill()
 
     def is_dead(self):
         if self.lives < 0:
             self.screen.blit(self.game_font.render(
-            "The war is lost! You scored: " + str(self.score), 
-            1, RED), (250, 15))
+            "The war is lost! You scored: " + str(
+            self.score), 1, RED), (250, 15))
             self.rounds_won = 0
             self.refresh_screen()
             pygame.time.delay(3000)
@@ -295,7 +297,7 @@ class Game(object):
                 GameState.alien_time = pygame.time.get_ticks()
                 self.control()
                 self.make_missile()
-                for actor in [self.player_group, self.bullet_group, 
+                for actor in [self.player_group, self.bullet_group,
                 self.alien_group, self.missile_group]:
                     for i in actor:
                         i.update()
