@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-import pygame, random, os
+import pygame, random
 
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255) 
