@@ -286,7 +286,7 @@ class Game(object):
                 i.kill()
         self.alien_wave(self.level_up)
         self.make_defenses()
-        self.level_up += 100
+        self.level_up += 50
 
     def main_loop(self):
         while not GameState.end_game:
