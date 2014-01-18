@@ -2,7 +2,7 @@
 
 # This is the dev branch
 
-import pygame, random
+import pygame, random, glob
 
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255) 
@@ -21,20 +21,50 @@ class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) 
         self.size = (60, 55)
-        self.rect = self.image.get_rect()
-        self.rect.x = (RES[0] / 2) - (self.size[0] / 2)
-        self.rect.y = 520
         self.travel = 7
         self.speed = 350
         self.time = pygame.time.get_ticks()
-        
+        # animation code
+        #self.ani_speed_init = 12 # higher number = slower animation
+        #self.ani_speed = self.ani_speed_init
+        #self.ani = ["data/ship/ship0.png", "data/ship/ship1.png", "data/ship/ship2.png",
+        #"data/ship/ship3.png", "data/ship/ship4.png", "data/ship/ship5.png"]
+        GameState.ani_pos = 0 #this is the first frame
+        #GameState.mid_ship = (len(GameState.ship) / 2) - 1
+        #GameState.ani_max = len(GameState.ship) - 1 # this is the last frame
+        self.rect = self.image.get_rect()
+        self.rect.x = (RES[0] / 2) - (self.size[0] / 2)
+        self.rect.y = 520
+
     def update(self):
         self.rect.x += GameState.vector * self.travel
         if self.rect.x < 0:
             self.rect.x = 0
         elif self.rect.x > RES[0] - self.size[0]:
             self.rect.x = RES[0] - self.size[0]
+        """"
+        #movement animation
+        if GameState.vector == 1: # if left flag showing:
+            #self.ani_speed -= 1
+           # if self.ani_speed == 0:
+            self.image = GameState.ship[GameState.ani_pos]
+                #self.ani_speed = self.ani_speed_init # goes back to zero
+            self.ani_pos += 1
+            if self.ani_pos >= self.ani_max:
+                self.ani_pos = self.ani_max
+        
+        if GameState.vector == 0 or GameState.vector == -1:
+            #self.ani_speed -= 1
+            #if self.ani_speed == 0:
+            self.image = pygame.image.load(self.ani[self.ani_pos]).convert()
+            self.image.set_colorkey(BLACK)
+            self.ani_pos -= 1
+            if self.ani_pos <= 0:
+                self.ani_pos = 0
 
+        if GameState.vector == -1: 
+            pass
+        """
 class Alien(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) 
@@ -60,6 +90,8 @@ class Alien(pygame.sprite.Sprite):
                 if self.speed <= 100:
                     self.speed = 100
             self.time = GameState.alien_time
+
+
 
 class Ammo(pygame.sprite.Sprite):
     def __init__(self, color, (width, height)):
@@ -113,12 +145,69 @@ class Game(object):
         'data/Space-Background.jpg').convert()
         pygame.display.set_caption('Pivaders - ESC to exit')
         pygame.mouse.set_visible(False) 
-        Player.image = pygame.image.load(
-        'data/ship.png').convert()
-        Player.image.set_colorkey(BLACK)
+
         Alien.image = pygame.image.load(
         'data/Spaceship16.png').convert()
         Alien.image.set_colorkey(WHITE)
+        
+        GameState.ship0 = pygame.image.load(
+        'data/ship/ship-5.png').convert()
+        GameState.ship0.image.set_colorkey(BLACK)
+
+        GameState.ship1 = pygame.image.load(
+        'data/ship/ship-4.png').convert()
+        GameState.ship1.image.set_colorkey(BLACK)
+
+        GameState.ship2 = pygame.image.load(
+        'data/ship/ship-3.png').convert()
+        GameState.ship2.image.set_colorkey(BLACK)
+
+        GameState.ship3 = pygame.image.load(
+        'data/ship/ship-2.png').convert()
+        GameState.ship3.image.set_colorkey(BLACK)
+
+        GameState.ship4 = pygame.image.load(
+        'data/ship/ship-1.png').convert()
+        GameState.ship4.image.set_colorkey(BLACK)
+
+        GameState.ship5 = pygame.image.load(
+        'data/ship/ship0.png').convert()
+        GameState.ship_mid.image.set_colorkey(BLACK)
+
+        GameState.ship6 = pygame.image.load(
+        'data/ship/ship1.png').convert()
+        GameState.ship6.image.set_colorkey(BLACK)
+
+        GameState.ship7 = pygame.image.load(
+        'data/ship/ship2.png').convert()
+        GameState.ship7.image.set_colorkey(BLACK)
+
+        GameState.ship8 = pygame.image.load(
+        'data/ship/ship3.png').convert()
+        GameState.ship8.image.set_colorkey(BLACK)
+
+        GameState.ship9 = pygame.image.load(
+        'data/ship/ship4.png').convert()
+        GameState.ship9.image.set_colorkey(BLACK)
+
+        GameState.ship10 = pygame.image.load(
+        'data/ship/ship5.png').convert()
+        GameState.ship10.image.set_colorkey(BLACK)
+
+        Player.image = GameState.ship5
+        """
+        , "data/ship/ship-4.png", 
+        "data/ship/ship-3.png", "data/ship/ship-2.png", "data/ship/ship-1.png",
+        "data/ship/ship0.png", "data/ship/ship1.png", "data/ship/ship2.png",
+        "data/ship/ship3.png", "data/ship/ship4.png", "data/ship/ship5.png"
+        ]
+        
+        i = 0
+        for image in GameState.load_ships:
+            GameState.ship_+int(i) = pygame.image.load(image).convert()
+            image.image.set_colorkey(WHITE)
+            i += 1
+        """
         GameState.end_game = False
         GameState.start_screen = True
         GameState.vector = 0
@@ -140,8 +229,10 @@ class Game(object):
         self.keys = pygame.key.get_pressed()
         if self.keys[pygame.K_LEFT]:
             GameState.vector = -1
+            #GameState.pos = 1
         elif self.keys[pygame.K_RIGHT]:
             GameState.vector = 1
+            GameState.pos = 1
         else:
             GameState.vector = 0
         if self.keys[pygame.K_SPACE]:
@@ -154,6 +245,20 @@ class Game(object):
                 self.alien_wave(0)
             else:
                 GameState.shoot_bullet = True
+
+    def refresh_screen(self):
+        self.refresh_scores()
+        self.all_sprite_list.draw(self.screen)
+        #self.screen.blit(self.player.image, (self.player.rect.x, self.player.rect.y))
+        pygame.display.flip() 
+        self.screen.blit(self.background, [0, 0])
+        self.clock.tick(self.refresh_rate)
+
+    def refresh_scores(self):
+        self.screen.blit(self.game_font.render(
+        "SCORE " + str(self.score), 1, WHITE), (10, 8))
+        self.screen.blit(self.game_font.render(
+        "LIVES " + str(self.lives + 1), 1, RED), (355, 575))
 
     def splash_screen(self):
         while GameState.start_screen:
@@ -170,19 +275,7 @@ class Game(object):
         self.player = Player()
         self.player_group.add(self.player)
         self.all_sprite_list.add(self.player)
-
-    def refresh_screen(self):
-        self.all_sprite_list.draw(self.screen) 
-        self.refresh_scores()
-        pygame.display.flip() 
-        self.screen.blit(self.background, [0, 0])
-        self.clock.tick(self.refresh_rate) 
-
-    def refresh_scores(self):
-        self.screen.blit(self.game_font.render(
-        "SCORE " + str(self.score), 1, WHITE), (10, 8))
-        self.screen.blit(self.game_font.render(
-        "LIVES " + str(self.lives + 1), 1, RED), (355, 575))
+        GameState.pos = 0
 
     def alien_wave(self, speed):
         for column in range(BARRIER_COLUMN):
@@ -299,7 +392,7 @@ class Game(object):
                 GameState.alien_time = pygame.time.get_ticks()
                 self.control()
                 self.make_missile()
-                for actor in [self.player_group, self.bullet_group,
+                for actor in [self.bullet_group, self.player_group,
                 self.alien_group, self.missile_group]:
                     for i in actor:
                         i.update()
