@@ -20,7 +20,7 @@ RES = (800, 600)
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) 
-        self.size = (61, 60)
+        self.size = (64, 61)
         self.rect = self.image.get_rect()
         self.rect.x = (RES[0] / 2) - (self.size[0] / 2)
         self.rect.y = 520
@@ -116,12 +116,10 @@ class Game(object):
         Alien.image = pygame.image.load(
         'data/graphics/Spaceship16.png').convert()
         Alien.image.set_colorkey(WHITE)
-        
         self.ani_pos = 5 # 11 images of ship leaning from left to right. 5th image is 'central'
         self.ship_sheet = pygame.image.load(
-        'data/graphics/ship_sheet_new.png').convert()
-        self.ship_sheet.set_colorkey(BLACK)
-        Player.image = self.ship_sheet.subsurface(self.ani_pos*61, 0, 61, 60)
+        'data/graphics/ship_sheet_final.png').convert_alpha()
+        Player.image = self.ship_sheet.subsurface(self.ani_pos*64, 0, 64, 61)
         self.animate_right = False
         self.animate_left = False
         self.explosion_sheet = pygame.image.load(
@@ -140,7 +138,6 @@ class Game(object):
         'data/sound/medetix__pc-bitcrushed-lazer-beam.ogg')
         self.explosion_fx = pygame.mixer.Sound(
         'data/sound/timgormly__8-bit-explosion.ogg')
-
         self.explodey_alien = []
         GameState.end_game = False
         GameState.start_screen = True
@@ -190,22 +187,21 @@ class Game(object):
     def animate_player(self):
         if self.animate_right:
             if self.ani_pos < 10:
-                Player.image = self.ship_sheet.subsurface(self.ani_pos*61, 0, 61, 60)
+                Player.image = self.ship_sheet.subsurface(self.ani_pos*64, 0, 64, 61)
                 self.ani_pos += 1
         else:
             if self.ani_pos > 5:
                 self.ani_pos -= 1
-                Player.image = self.ship_sheet.subsurface(self.ani_pos*61, 0, 61, 60)
+                Player.image = self.ship_sheet.subsurface(self.ani_pos*64, 0, 64, 61)
 
         if self.animate_left:
             if self.ani_pos > 0:
                 self.ani_pos -= 1
-                Player.image = self.ship_sheet.subsurface(self.ani_pos*61, 0, 61, 60)
+                Player.image = self.ship_sheet.subsurface(self.ani_pos*64, 0, 64, 61)
         else:
             if self.ani_pos < 5:
-                Player.image = self.ship_sheet.subsurface(self.ani_pos*61, 0, 61, 60)
+                Player.image = self.ship_sheet.subsurface(self.ani_pos*64, 0, 64, 61)
                 self.ani_pos += 1
-
 
     def player_explosion(self):
         if self.explode:
@@ -366,7 +362,6 @@ class Game(object):
             self.lives -= 1
             self.explode = True
             self.explosion_fx.play()
-
 
     def next_round(self):
         for actor in [self.missile_group, 
