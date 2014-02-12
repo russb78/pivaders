@@ -1,5 +1,7 @@
 #!/usr/bin/env python2
 
+# This is the dev branch
+
 import pygame, random
 
 BLACK = (0, 0, 0)
@@ -18,7 +20,7 @@ RES = (800, 600)
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) 
-        self.size = (60, 55)
+        self.size = (64, 61)
         self.rect = self.image.get_rect()
         self.rect.x = (RES[0] / 2) - (self.size[0] / 2)
         self.rect.y = 520
@@ -106,17 +108,37 @@ class Game(object):
         self.barrier_group = pygame.sprite.Group()
         self.all_sprite_list = pygame.sprite.Group()
         self.intro_screen = pygame.image.load(
-        'data/start_screen.jpg').convert()
+        'data/graphics/start_screen.jpg').convert()
         self.background = pygame.image.load(
-        'data/Space-Background.jpg').convert()
+        'data/graphics/Space-Background.jpg').convert()
         pygame.display.set_caption('Pivaders - ESC to exit')
         pygame.mouse.set_visible(False) 
-        Player.image = pygame.image.load(
-        'data/ship.png').convert()
-        Player.image.set_colorkey(BLACK)
         Alien.image = pygame.image.load(
-        'data/Spaceship16.png').convert()
+        'data/graphics/Spaceship16.png').convert()
         Alien.image.set_colorkey(WHITE)
+        self.ani_pos = 5 # 11 images of ship leaning from left to right. 5th image is 'central'
+        self.ship_sheet = pygame.image.load(
+        'data/graphics/ship_sheet_final.png').convert_alpha()
+        Player.image = self.ship_sheet.subsurface(self.ani_pos*64, 0, 64, 61)
+        self.animate_right = False
+        self.animate_left = False
+        self.explosion_sheet = pygame.image.load(
+        'data/graphics/explosion_new1.png').convert_alpha()
+        self.explosion_image = self.explosion_sheet.subsurface(0, 0, 79, 96)
+        self.alien_explosion_sheet = pygame.image.load(
+        'data/graphics/alien_explosion.png')
+        self.alien_explode_graphics = self.alien_explosion_sheet.subsurface(0, 0, 94, 96)
+        self.explode = False
+        self.explode_pos = 0
+        self.alien_explode = False
+        self.alien_explode_pos = 0
+        pygame.mixer.music.load('data/sound/10_Arpanauts.ogg')
+        pygame.mixer.music.play(-1)
+        self.bullet_fx = pygame.mixer.Sound(
+        'data/sound/medetix__pc-bitcrushed-lazer-beam.ogg')
+        self.explosion_fx = pygame.mixer.Sound(
+        'data/sound/timgormly__8-bit-explosion.ogg')
+        self.explodey_alien = []
         GameState.end_game = False
         GameState.start_screen = True
         GameState.vector = 0
@@ -138,10 +160,18 @@ class Game(object):
         self.keys = pygame.key.get_pressed()
         if self.keys[pygame.K_LEFT]:
             GameState.vector = -1
+            self.animate_left = True
+            self.animate_right = False
         elif self.keys[pygame.K_RIGHT]:
             GameState.vector = 1
+            self.animate_right = True
+            self.animate_left = False
+
         else:
             GameState.vector = 0
+            self.animate_right = False
+            self.animate_left = False
+
         if self.keys[pygame.K_SPACE]:
             if GameState.start_screen:
                 GameState.start_screen = False
@@ -152,6 +182,47 @@ class Game(object):
                 self.alien_wave(0)
             else:
                 GameState.shoot_bullet = True
+                self.bullet_fx.play()
+
+    def animate_player(self):
+        if self.animate_right:
+            if self.ani_pos < 10:
+                Player.image = self.ship_sheet.subsurface(self.ani_pos*64, 0, 64, 61)
+                self.ani_pos += 1
+        else:
+            if self.ani_pos > 5:
+                self.ani_pos -= 1
+                Player.image = self.ship_sheet.subsurface(self.ani_pos*64, 0, 64, 61)
+
+        if self.animate_left:
+            if self.ani_pos > 0:
+                self.ani_pos -= 1
+                Player.image = self.ship_sheet.subsurface(self.ani_pos*64, 0, 64, 61)
+        else:
+            if self.ani_pos < 5:
+                Player.image = self.ship_sheet.subsurface(self.ani_pos*64, 0, 64, 61)
+                self.ani_pos += 1
+
+    def player_explosion(self):
+        if self.explode:
+            if self.explode_pos < 8:
+                self.explosion_image = self.explosion_sheet.subsurface(0, self.explode_pos*96, 79, 96)
+                self.explode_pos += 1
+                self.screen.blit(self.explosion_image, [self.player.rect.x -10, self.player.rect.y - 30])
+            else:
+                self.explode = False
+                self.explode_pos = 0
+
+    def alien_explosion(self):
+        if self.alien_explode:
+            if self.alien_explode_pos < 9:
+                self.alien_explode_graphics = self.alien_explosion_sheet.subsurface(0, self.alien_explode_pos*96, 94, 96)
+                self.alien_explode_pos += 1
+                self.screen.blit(self.alien_explode_graphics, [int(self.explodey_alien[0]) - 50 , int(self.explodey_alien[1]) - 60])
+            else:
+                self.alien_explode = False
+                self.alien_explode_pos = 0
+                self.explodey_alien = []
 
     def splash_screen(self):
         while GameState.start_screen:
@@ -163,6 +234,7 @@ class Game(object):
             "PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
             pygame.display.flip()
             self.control()
+            self.clock.tick(self.refresh_rate) 
 
     def make_player(self):
         self.player = Player()
@@ -171,6 +243,9 @@ class Game(object):
 
     def refresh_screen(self):
         self.all_sprite_list.draw(self.screen) 
+        self.animate_player()
+        self.player_explosion()
+        self.alien_explosion()
         self.refresh_scores()
         pygame.display.flip() 
         self.screen.blit(self.background, [0, 0])
@@ -274,12 +349,19 @@ class Game(object):
         self.missile_group, self.barrier_group, True, True)
         pygame.sprite.groupcollide(
         self.bullet_group, self.barrier_group, True, True)
-        if pygame.sprite.groupcollide(
+        for z in pygame.sprite.groupcollide(
         self.bullet_group, self.alien_group, True, True):
+            self.alien_explode = True
+            self.explodey_alien.append(z.rect.x)
+            self.explodey_alien.append(z.rect.y)
             self.score += 10
+            self.explosion_fx.play()
+
         if pygame.sprite.groupcollide(
         self.player_group, self.missile_group, False, True):
             self.lives -= 1
+            self.explode = True
+            self.explosion_fx.play()
 
     def next_round(self):
         for actor in [self.missile_group, 
@@ -297,18 +379,18 @@ class Game(object):
                 GameState.alien_time = pygame.time.get_ticks()
                 self.control()
                 self.make_missile()
+                self.calc_collisions()
+                self.refresh_screen()
+                if self.is_dead() or self.defenses_breached():
+                    GameState.start_screen = True
                 for actor in [self.player_group, self.bullet_group,
                 self.alien_group, self.missile_group]:
                     for i in actor:
                         i.update()
                 if GameState.shoot_bullet:
                     self.make_bullet()
-                self.calc_collisions()
-                if self.is_dead() or self.defenses_breached():
-                    GameState.start_screen = True
                 if self.win_round():
                     self.next_round()
-                self.refresh_screen()
             self.splash_screen()
         pygame.quit()
 
