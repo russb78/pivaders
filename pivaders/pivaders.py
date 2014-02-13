@@ -1,7 +1,5 @@
 #!/usr/bin/env python2
 
-# This is the dev branch
-
 import pygame, random
 
 BLACK = (0, 0, 0)
@@ -134,10 +132,12 @@ class Game(object):
         self.alien_explode_pos = 0
         pygame.mixer.music.load('data/sound/10_Arpanauts.ogg')
         pygame.mixer.music.play(-1)
+        pygame.mixer.music.set_volume(0.7)
         self.bullet_fx = pygame.mixer.Sound(
         'data/sound/medetix__pc-bitcrushed-lazer-beam.ogg')
         self.explosion_fx = pygame.mixer.Sound(
         'data/sound/timgormly__8-bit-explosion.ogg')
+        self.explosion_fx.set_volume(0.5)
         self.explodey_alien = []
         GameState.end_game = False
         GameState.start_screen = True
@@ -216,9 +216,11 @@ class Game(object):
     def alien_explosion(self):
         if self.alien_explode:
             if self.alien_explode_pos < 9:
-                self.alien_explode_graphics = self.alien_explosion_sheet.subsurface(0, self.alien_explode_pos*96, 94, 96)
+                self.alien_explode_graphics = self.alien_explosion_sheet.subsurface(
+                0, self.alien_explode_pos*96, 94, 96)
                 self.alien_explode_pos += 1
-                self.screen.blit(self.alien_explode_graphics, [int(self.explodey_alien[0]) - 50 , int(self.explodey_alien[1]) - 60])
+                self.screen.blit(self.alien_explode_graphics, [
+                    int(self.explodey_alien[0]) - 50 , int(self.explodey_alien[1]) - 60])
             else:
                 self.alien_explode = False
                 self.alien_explode_pos = 0
@@ -234,7 +236,7 @@ class Game(object):
             "PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
             pygame.display.flip()
             self.control()
-            self.clock.tick(self.refresh_rate) 
+            self.clock.tick(self.refresh_rate / 2) 
 
     def make_player(self):
         self.player = Player()
@@ -321,8 +323,24 @@ class Game(object):
             self.score), 1, RED), (250, 15))
             self.rounds_won = 0
             self.refresh_screen()
+            self.level_up = 50
+            self.explode = False
+            self.alien_explode = False
             pygame.time.delay(3000)
             return True
+
+    def defenses_breached(self):
+        for alien in self.alien_group:
+            if alien.rect.y > 410:
+                self.screen.blit(self.game_font.render(
+                "The aliens have breached Earth defenses!", 
+                1, RED), (180, 15))
+                self.refresh_screen()
+                self.level_up = 50
+                self.explode = False
+                self.alien_explode = False
+                pygame.time.delay(3000)
+                return True
 
     def win_round(self):
         if len(self.alien_group) < 1:
@@ -334,21 +352,23 @@ class Game(object):
             pygame.time.delay(3000)
             return True
 
-    def defenses_breached(self):
-        for alien in self.alien_group:
-            if alien.rect.y > 410:
-                self.screen.blit(self.game_font.render(
-                "The aliens have breached Earth defenses!", 
-                1, RED), (180, 15))
-                self.refresh_screen()
-                pygame.time.delay(3000)
-                return True
+    def next_round(self):
+        self.explode = False
+        self.alien_explode = False
+        for actor in [self.missile_group, 
+        self.barrier_group, self.bullet_group]:
+            for i in actor:
+                i.kill()
+        self.alien_wave(self.level_up)
+        self.make_defenses()
+        self.level_up += 50
 
     def calc_collisions(self):
         pygame.sprite.groupcollide(
         self.missile_group, self.barrier_group, True, True)
         pygame.sprite.groupcollide(
         self.bullet_group, self.barrier_group, True, True)
+        
         for z in pygame.sprite.groupcollide(
         self.bullet_group, self.alien_group, True, True):
             self.alien_explode = True
@@ -362,15 +382,6 @@ class Game(object):
             self.lives -= 1
             self.explode = True
             self.explosion_fx.play()
-
-    def next_round(self):
-        for actor in [self.missile_group, 
-        self.barrier_group, self.bullet_group]:
-            for i in actor:
-                i.kill()
-        self.alien_wave(self.level_up)
-        self.make_defenses()
-        self.level_up += 50
 
     def main_loop(self):
         while not GameState.end_game:
